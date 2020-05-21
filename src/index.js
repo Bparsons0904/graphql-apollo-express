@@ -36,7 +36,8 @@ let users = {
   },
 };
 
-const me = users[1];
+// Replaced by apollo server context
+// const me = users[1];
 
 // GraphQL resolvers, set returns
 const resolvers = {
@@ -47,7 +48,7 @@ const resolvers = {
     user: (parent, { id }) => {
       return users[id];
     },
-    me: () => {
+    me: (parent, args, { me }) => {
       return me;
     },
   },
@@ -57,6 +58,9 @@ const resolvers = {
 const server = new ApolloServer({
   typeDefs: schema,
   resolvers,
+  context: {
+    me: users[1],
+  },
 });
 
 // Set API path
