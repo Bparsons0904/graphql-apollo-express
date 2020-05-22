@@ -14,13 +14,22 @@ app.use(cors());
 const schema = gql`
   type Query {
     users: [User!]
-    user(id: ID!): User
     me: User
+    user(id: ID!): User
+    messages: [Message!]!
+    message(id: ID!): Message!
   }
 
   type User {
     id: ID!
     username: String!
+    messages: [Message!]
+  }
+
+  type Message {
+    id: ID!
+    text: String!
+    user: User!
   }
 `;
 
@@ -29,10 +38,45 @@ let users = {
   1: {
     id: "1",
     username: "Bob Parsons",
+    messageIds: [1, 3, 5],
   },
   2: {
     id: "2",
     username: "Dave Davids",
+    messageIds: [2, 4, 6],
+  },
+};
+
+let messages = {
+  1: {
+    id: "1",
+    text: "Hello World",
+    userId: "1",
+  },
+  2: {
+    id: "2",
+    text: "By World",
+    userId: "2",
+  },
+  3: {
+    id: "3",
+    text: "See ya World",
+    userId: "1",
+  },
+  4: {
+    id: "4",
+    text: "Its a new World",
+    userId: "2",
+  },
+  5: {
+    id: "5",
+    text: "Another extra",
+    userId: "1",
+  },
+  6: {
+    id: "6",
+    text: "My 2nd message",
+    userId: "3",
   },
 };
 
@@ -41,6 +85,7 @@ let users = {
 
 // GraphQL resolvers, set returns
 const resolvers = {
+  // Base querys
   Query: {
     users: () => {
       return Object.values(users);
@@ -50,6 +95,28 @@ const resolvers = {
     },
     me: (parent, args, { me }) => {
       return me;
+    },
+    messages: () => {
+      return Object.values(messages);
+    },
+    message: (parent, { id }) => {
+      return messages[id];
+    },
+  },
+  // Define User message type return value
+  User: {
+    messages: (user) => {
+      // Return array of messages matching user ID
+      return Object.values(messages).filter(
+        (message) => message.userId === user.id
+      );
+    },
+  },
+  // Define Message type return value
+  Message: {
+    // Return user object matching message userId
+    user: (message) => {
+      return users[message.userId];
     },
   },
 };
