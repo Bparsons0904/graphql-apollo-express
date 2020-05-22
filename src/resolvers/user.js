@@ -1,25 +1,26 @@
 export default {
   Query: {
     // Multiple Users
-    users: (parent, args, { models }) => {
-      return Object.values(models.users);
+    users: async (parent, args, { models }) => {
+      return await models.User.findAll();
     },
     // Single User
-    user: (parent, { id }, { models }) => {
-      return models.users[id];
+    user: async (parent, { id }, { models }) => {
+      return await models.User.findByPk(id);
     },
     // Current User
-    me: (parent, args, { me }) => {
-      return me;
+    me: async (parent, args, { models, me }) => {
+      return await models.User.findByPk(me.id);
     },
   },
   // Define User message type return value
   User: {
-    messages: (user, args, { models }) => {
-      // Return array of messages matching user ID
-      return Object.values(models.messages).filter(
-        (message) => message.userId === user.id
-      );
+    messages: async (user, args, { models }) => {
+      return await models.Message.findAll({
+        where: {
+          userId: user.id,
+        },
+      });
     },
   },
 };

@@ -1,58 +1,41 @@
-import { v4 as uuidv4 } from "uuid";
-
 export default {
   // Base query's
   Query: {
     // Multiple Messages
-    messages: (parent, args, { models }) => {
-      return Object.values(models.messages);
+    messages: async (parent, args, { models }) => {
+      return await models.Message.findAll();
     },
     // Single Message
-    message: (parent, { id }, { models }) => {
-      return models.messages[id];
+    message: async (parent, { id }, { models }) => {
+      // return await models.Message.findByPk(id);
+      const message = models.Message.findByPk(id);
+        console.log(message);
+        
+        return await message;
     },
   },
 
   // Create, Update and Delete Mutations
   Mutation: {
-    createMessage: (parent, { text }, { me, models }) => {
-      // Generate new ID
-      const id = uuidv4();
-      // Create message with user input and new id
-      const message = {
-        id,
+    createMessage: async (parent, { text }, { me, models }) => {
+      // Return new message
+      return await models.Message.create({
         text,
         userId: me.id,
-      };
-      // Set message into messages based on ID
-      models.messages[id] = message;
-      // Add messageId to array of user messages
-      models.users[me.id].messageIds.push(id);
-      return message;
+      });
     },
-    deleteMessage: (parent, { id }, { models }) => {
-      // Set message variable to message to be deleted,
-      // Set remainder of array to otherMessages
-      const { [id]: message, ...otherMessages } = models.messages;
-
-      // Return false if message not found
-      if (!message) {
-        return false;
-      }
-      // Set messages to remaining messages array
-      models.messages = otherMessages;
-      return true;
+    // Return boolean if delete is successful
+    deleteMessage: async (parent, { id }, { models }) => {
+      return await models.Message.destroy({ where: { id } });
     },
-    updateMessage: (parent, { id, text }, { models }) => {
-      // Set message variable to message to be updated
-      const { [id]: message } = models.messages;
-      // Return false if selected message not found
-      if (!message) {
-        return false;
-      }
-      // Set message to new text value
-      message.text = text;
-      return message;
+    updateMessage: async (parent, { id, text }, { models }) => {
+      // Update message with user input and return updated message
+      return await models.Message.update(
+        { text: text },
+        { where: { id: id }, returning: true }
+      ).then((message) => { 
+        return message[1][0].dataValues;
+      })
     },
   },
 
