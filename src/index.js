@@ -3,6 +3,8 @@ import express from "express";
 import { ApolloServer, gql } from "apollo-server-express";
 // Allow for cross-domain request
 import cors from "cors";
+// Generate ids
+import { v4 as uuidv4 } from "uuid";
 
 // set app variable to express main function
 const app = express();
@@ -18,6 +20,12 @@ const schema = gql`
     user(id: ID!): User
     messages: [Message!]!
     message(id: ID!): Message!
+  }
+
+  type Mutation {
+    createMessage(text: String!): Message!
+    deleteMessage(id: ID!): Boolean!
+    updateMessage(id: ID!, text: String!): Message!
   }
 
   type User {
@@ -80,9 +88,6 @@ let messages = {
   },
 };
 
-// Replaced by apollo server context
-// const me = users[1];
-
 // GraphQL resolvers, set returns
 const resolvers = {
   // Base querys
@@ -101,6 +106,48 @@ const resolvers = {
     },
     message: (parent, { id }) => {
       return messages[id];
+    },
+  },
+
+  // Create, Update and Delete Mutations
+  Mutation: {
+    createMessage: (parent, { text }, { me }) => {
+      // Generate new ID
+      const id = uuidv4();
+      // Create message with user input and new id
+      const message = {
+        id,
+        text,
+        userId: me.id,
+      };
+      // Set message into messages based on ID
+      messages[id] = message;
+      // Add messageId to array of user messages
+      users[me.id].messageIds.push(id);
+      return message;
+    },
+    deleteMessage: (parent, { id }) => {
+      // Set message variable to message to be deleted,
+      // Set remainder of array to otherMessages
+      const { [id]: message, ...otherMessages } = messages;
+      // Return false if message not found
+      if (!message) {
+        return false;
+      }
+      // Set messages to remaining messages array
+      messages = otherMessages;
+      return true;
+    },
+    updateMessage: (parent, { id, text }) => {
+      // Set message variable to message to be updated
+      const { [id]: message } = messages;
+      // Return false if selected message not found
+      if (!message) {
+        return false;
+      }
+      // Set message to new text value
+      message.text = text;
+      return message;
     },
   },
   // Define User message type return value
