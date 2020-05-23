@@ -6,6 +6,8 @@ import messageSchema from "./message";
 
 // Link available Schemas
 const linkSchema = gql`
+  scalar Date
+  
   type Query {
     _: Boolean
   }
