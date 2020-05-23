@@ -8,6 +8,8 @@ import resolvers from "./resolvers";
 import models, { sequelize } from "./models";
 // Allow for cross-domain request
 import cors from "cors";
+// Allow transfer of data over HTTP
+import http from "http";
 
 // set app variable to express main function
 const app = express();
@@ -46,19 +48,31 @@ const server = new ApolloServer({
       message,
     };
   },
-  context: async ({ req }) => {
-    const me = await getMe(req);
+  context: async ({ req, connection }) => {
+    if (connection) {
+      return {
+        models,
+      };
+    }
 
-    return {
-      models,
-      me,
-      secret: process.env.SECRET,
-    };
+    if (req) {
+      const me = await getMe(req);
+
+      return {
+        models,
+        me,
+        secret: process.env.SECRET,
+      };
+    }
   },
 });
 
 // Set API path
 server.applyMiddleware({ app, path: "/graphql" });
+
+// Init http server to handle subscriptions
+const httpServer = http.createServer(app);
+server.installSubscriptionHandlers(httpServer);
 
 // Value to determine if database values should be reset
 const eraseDatabaseOnSync = true;
@@ -69,7 +83,7 @@ sequelize.sync({ force: eraseDatabaseOnSync }).then(async () => {
     createUsersWithMessages(new Date());
   }
   // Listen on localhost:8000 for HTTP request
-  app.listen({ port: 8000 }, () => {
+  httpServer.listen({ port: 8000 }, () => {
     console.log("Apollo Server on http://localhost:8000/graphql");
   });
 });

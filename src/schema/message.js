@@ -19,8 +19,8 @@ export default gql`
   }
 
   type PageInfo {
-    endCursor: String!
     hasNextPage: Boolean!
+    endCursor: String!
   }
 
   type Message {
@@ -28,5 +28,13 @@ export default gql`
     text: String!
     createdAt: Date!
     user: User!
+  }
+
+  extend type Subscription {
+    messageCreated: MessageCreated!
+  }
+
+  type MessageCreated {
+    message: Message!
   }
 `;

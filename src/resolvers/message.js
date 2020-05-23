@@ -4,6 +4,8 @@ import { combineResolvers } from "graphql-resolvers";
 import { isAuthenticated, isMessageOwner } from "./authorization";
 // Implement cursor pagination
 import Sequelize from "sequelize";
+// Subscription services for messages
+import pubsub, { EVENTS } from "../subscription";
 
 // Date variables of cursor to/from hash
 const toCursorHash = (string) => Buffer.from(string).toString("base64");
@@ -47,11 +49,7 @@ export default {
     },
     // Single Message
     message: async (parent, { id }, { models }) => {
-      // return await models.Message.findByPk(id);
-      const message = models.Message.findByPk(id);
-      console.log(message);
-
-      return await message;
+      return await models.Message.findByPk(id);
     },
   },
 
@@ -60,10 +58,16 @@ export default {
     createMessage: combineResolvers(
       isAuthenticated,
       async (parent, { text }, { models, me }) => {
-        return await models.Message.create({
+        const message = await models.Message.create({
           text,
           userId: me.id,
         });
+
+        pubsub.publish(EVENTS.MESSAGE.CREATED, {
+          messageCreated: { message },
+        });
+
+        return message;
       }
     ),
 
@@ -93,8 +97,15 @@ export default {
   // Define Message type return value
   Message: {
     // Return user object matching message userId
-    user: (message, args, { models }) => {
-      return models.users[message.userId];
+    user: async (message, args, { models }) => {
+      return await models.User.findByPk(message.userId);
+    },
+  },
+
+  // Subscription services
+  Subscription: {
+    messageCreated: {
+      subscribe: () => pubsub.asyncIterator(EVENTS.MESSAGE.CREATED),
     },
   },
 };
