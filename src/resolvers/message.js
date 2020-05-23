@@ -2,13 +2,48 @@
 import { combineResolvers } from "graphql-resolvers";
 // Custom authentication methods
 import { isAuthenticated, isMessageOwner } from "./authorization";
+// Implement cursor pagination
+import Sequelize from "sequelize";
+
+// Date variables of cursor to/from hash
+const toCursorHash = (string) => Buffer.from(string).toString("base64");
+const fromCursorHash = (string) =>
+  Buffer.from(string, "base64").toString("ascii");
 
 export default {
   // Base query's
   Query: {
     // Multiple Messages
-    messages: async (parent, args, { models }) => {
-      return await models.Message.findAll();
+    messages: async (parent, { cursor, limit = 100 }, { models }) => {
+      // If cursor, set location point else no options
+      const cursorOptions = cursor
+        ? {
+            where: {
+              createdAt: {
+                [Sequelize.Op.lt]: fromCursorHash(cursor),
+              },
+            },
+          }
+        : {};
+      // Return messages from cursor upto limit plus 1
+      const messages = await models.Message.findAll({
+        order: [["createdAt", "DESC"]],
+        limit: limit + 1,
+        ...cursorOptions,
+      });
+
+      // Set if more messages are available
+      const hasNextPage = messages.length > limit;
+      // Set messages to edges based on if more messaged exist
+      const edges = hasNextPage ? messages.slice(0, -1) : messages;
+
+      return {
+        edges,
+        pageInfo: {
+          hasNextPage,
+          endCursor: toCursorHash(edges[edges.length - 1].createdAt.toString()),
+        },
+      };
     },
     // Single Message
     message: async (parent, { id }, { models }) => {

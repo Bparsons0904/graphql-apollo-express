@@ -75,7 +75,7 @@ sequelize.sync({ force: eraseDatabaseOnSync }).then(async () => {
 });
 
 // Clean database with each reload
-const createUsersWithMessages = async date => {
+const createUsersWithMessages = async (date) => {
   await models.User.create(
     {
       username: "rwieruch",
