@@ -7,6 +7,10 @@ const message = (sequelize, DataTypes) => {
           args: true,
           msg: "Text required for messages.",
         },
+        len: {
+          args: [5, 200],
+          msg: "Message length of 5-200 required.",
+        },
       },
     },
   });

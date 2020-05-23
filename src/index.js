@@ -32,19 +32,21 @@ const server = new ApolloServer({
   context: async () => ({
     models,
     me: await models.User.findByLogin("rwieruch"),
+    secret: process.env.SECRET,
   }),
 });
 
 // Set API path
 server.applyMiddleware({ app, path: "/graphql" });
 
+// Value to determine if database values should be reset
 const eraseDatabaseOnSync = true;
 
+// Connect to postgres database through sequelize
 sequelize.sync({ force: eraseDatabaseOnSync }).then(async () => {
   if (eraseDatabaseOnSync) {
     createUsersWithMessages();
   }
-
   // Listen on localhost:8000 for HTTP request
   app.listen({ port: 8000 }, () => {
     console.log("Apollo Server on http://localhost:8000/graphql");
@@ -56,6 +58,8 @@ const createUsersWithMessages = async () => {
   await models.User.create(
     {
       username: "rwieruch",
+      email: "hello@robin.com",
+      password: "rwieruch",
       messages: [
         {
           text: "Published the Road to learn React",
@@ -70,6 +74,8 @@ const createUsersWithMessages = async () => {
   await models.User.create(
     {
       username: "ddavids",
+      email: "hello@david.com",
+      password: "ddavids",
       messages: [
         {
           text: "Happy to release ...",
