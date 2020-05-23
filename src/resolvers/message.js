@@ -1,3 +1,8 @@
+// Allow for authentication checks
+import { combineResolvers } from "graphql-resolvers";
+// Custom authentication methods
+import { isAuthenticated, isMessageOwner } from "./authorization";
+
 export default {
   // Base query's
   Query: {
@@ -9,34 +14,45 @@ export default {
     message: async (parent, { id }, { models }) => {
       // return await models.Message.findByPk(id);
       const message = models.Message.findByPk(id);
-        console.log(message);
-        
-        return await message;
+      console.log(message);
+
+      return await message;
     },
   },
 
   // Create, Update and Delete Mutations
   Mutation: {
-    createMessage: async (parent, { text }, { me, models }) => {
-      // Return new message
-      return await models.Message.create({
-        text,
-        userId: me.id,
-      });
-    },
+    createMessage: combineResolvers(
+      isAuthenticated,
+      async (parent, { text }, { models, me }) => {
+        return await models.Message.create({
+          text,
+          userId: me.id,
+        });
+      }
+    ),
+
     // Return boolean if delete is successful
-    deleteMessage: async (parent, { id }, { models }) => {
-      return await models.Message.destroy({ where: { id } });
-    },
-    updateMessage: async (parent, { id, text }, { models }) => {
-      // Update message with user input and return updated message
-      return await models.Message.update(
-        { text: text },
-        { where: { id: id }, returning: true }
-      ).then((message) => { 
-        return message[1][0].dataValues;
-      })
-    },
+    deleteMessage: combineResolvers(
+      isAuthenticated,
+      isMessageOwner,
+      async (parent, { id }, { models }) => {
+        return await models.Message.destroy({ where: { id } });
+      }
+    ),
+    updateMessage: combineResolvers(
+      isAuthenticated,
+      isMessageOwner,
+      async (parent, { id, text }, { models }) => {
+        // Update message with user input and return updated message
+        return await models.Message.update(
+          { text: text },
+          { where: { id: id }, returning: true }
+        ).then((message) => {
+          return message[1][0].dataValues;
+        });
+      }
+    ),
   },
 
   // Define Message type return value

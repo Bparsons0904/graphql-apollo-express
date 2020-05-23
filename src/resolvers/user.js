@@ -1,12 +1,16 @@
 // Generate token
 import jwt from "jsonwebtoken";
+// Allow for authentications
+import { combineResolvers } from "graphql-resolvers";
 // Apollo error handling
 import { AuthenticationError, UserInputError } from "apollo-server";
+// Check if user has admin role
+import { isAdmin } from "./authorization";
 
 // Generate token
 const createToken = async (user, secret, expiresIn) => {
-  const { id, email, username } = user;
-  return await jwt.sign({ id, email, username }, secret, {
+  const { id, email, username, role } = user;
+  return await jwt.sign({ id, email, username, role }, secret, {
     expiresIn,
   });
 };
@@ -67,6 +71,15 @@ export default {
       // Return token for client
       return { token: createToken(user, secret, "30m") };
     },
+    // Delete a user
+    deleteUser: combineResolvers(
+      isAdmin,
+      async (parent, { id }, { models }) => {
+        return await models.User.destroy({
+          where: { id },
+        });
+      }
+    ),
   },
   // Define User message type return value
   User: {

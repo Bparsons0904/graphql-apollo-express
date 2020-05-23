@@ -1,6 +1,8 @@
 import express from "express";
+// Token generation
+import jwt from "jsonwebtoken";
 // Import required modules for Apollo/GraphQL
-import { ApolloServer } from "apollo-server-express";
+import { ApolloServer, AuthenticationError } from "apollo-server-express";
 import schema from "./schema";
 import resolvers from "./resolvers";
 import models, { sequelize } from "./models";
@@ -12,6 +14,21 @@ const app = express();
 
 // Allow cross domain request
 app.use(cors());
+
+// Set current user
+const getMe = async (req) => {
+  // token from header
+  const token = req.headers["x-token"];
+  // If token is found
+  if (token) {
+    // Verify token matches secret token
+    try {
+      return await jwt.verify(token, process.env.SECRET);
+    } catch (e) {
+      throw new AuthenticationError("Your session expired. Sign in again.");
+    }
+  }
+};
 
 // Init apollo server with schema and resolvers
 const server = new ApolloServer({
@@ -29,11 +46,15 @@ const server = new ApolloServer({
       message,
     };
   },
-  context: async () => ({
-    models,
-    me: await models.User.findByLogin("rwieruch"),
-    secret: process.env.SECRET,
-  }),
+  context: async ({ req }) => {
+    const me = await getMe(req);
+
+    return {
+      models,
+      me,
+      secret: process.env.SECRET,
+    };
+  },
 });
 
 // Set API path
@@ -60,6 +81,7 @@ const createUsersWithMessages = async () => {
       username: "rwieruch",
       email: "hello@robin.com",
       password: "rwieruch",
+      role: "ADMIN",
       messages: [
         {
           text: "Published the Road to learn React",
