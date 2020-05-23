@@ -76,10 +76,11 @@ server.installSubscriptionHandlers(httpServer);
 
 // Value to determine if database values should be reset
 const eraseDatabaseOnSync = true;
+const isTest = !!process.env.TEST_DATABASE;
 
 // Connect to postgres database through sequelize
-sequelize.sync({ force: eraseDatabaseOnSync }).then(async () => {
-  if (eraseDatabaseOnSync) {
+sequelize.sync({ force: isTest }).then(async () => {
+  if (isTest) {
     createUsersWithMessages(new Date());
   }
   // Listen on localhost:8000 for HTTP request
