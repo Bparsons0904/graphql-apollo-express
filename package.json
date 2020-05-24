@@ -30,9 +30,6 @@
     "nodemon": "^2.0.4"
   },
   "scripts": {
-    "clean": "rm -rf dist && mkdir dist",
-    "build-server": "babel -d ./dist ./srv -s",
-    "build": "npm run clean && npm run build-server",
     "start": "node dist/index.js",
     "test-server": "env TEST_DATABASE=mytestdatabase npm start",
     "test": "mocha --require @babel/register 'src/**/*.spec.js'"
