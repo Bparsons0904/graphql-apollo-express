@@ -10,6 +10,8 @@ import models, { sequelize } from "./models";
 import cors from "cors";
 // Allow transfer of data over HTTP
 import http from "http";
+import DataLoader from "dataloader";
+import loaders from "./loaders";
 
 // set app variable to express main function
 const app = express();
@@ -34,6 +36,8 @@ const getMe = async (req) => {
 
 // Init apollo server with schema and resolvers
 const server = new ApolloServer({
+  introspection: true,
+  playground: true,
   typeDefs: schema,
   resolvers,
   formatError: (error) => {
@@ -52,6 +56,9 @@ const server = new ApolloServer({
     if (connection) {
       return {
         models,
+        loaders: {
+          user: new DataLoader((keys) => loaders.user.batchUsers(keys, models)),
+        },
       };
     }
 
@@ -62,6 +69,9 @@ const server = new ApolloServer({
         models,
         me,
         secret: process.env.SECRET,
+        loaders: {
+          user: new DataLoader((keys) => loaders.user.batchUsers(keys, models)),
+        },
       };
     }
   },
@@ -76,16 +86,21 @@ server.installSubscriptionHandlers(httpServer);
 
 // Value to determine if database values should be reset
 const eraseDatabaseOnSync = true;
+// Check if using testing database
 const isTest = !!process.env.TEST_DATABASE;
+// Check if production database in use
+const isProduction = !!process.env.DATABASE_URL;
+// Port based on prod or dev environment
+const port = process.env.PORT || 8000;
 
 // Connect to postgres database through sequelize
-sequelize.sync({ force: isTest }).then(async () => {
-  if (isTest) {
+sequelize.sync({ force: isTest || isProduction }).then(async () => {
+  if (isTest || isProduction || eraseDatabaseOnSync) {
     createUsersWithMessages(new Date());
   }
-  // Listen on localhost:8000 for HTTP request
-  httpServer.listen({ port: 8000 }, () => {
-    console.log("Apollo Server on http://localhost:8000/graphql");
+  // Listen on port based on prod or dev
+  httpServer.listen({ port }, () => {
+    console.log(`Apollo Server on http://localhost:${port}/graphql`);
   });
 });
 
