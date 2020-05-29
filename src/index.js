@@ -77,7 +77,7 @@ const server = new ApolloServer({
   },
 });
 
-// Set API path
+// Set API path and include express as middleware
 server.applyMiddleware({ app, path: "/graphql" });
 
 // Init http server to handle subscriptions

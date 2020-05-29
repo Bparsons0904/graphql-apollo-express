@@ -1,3 +1,4 @@
+// Define message model with validation
 const message = (sequelize, DataTypes) => {
   const Message = sequelize.define("message", {
     text: {

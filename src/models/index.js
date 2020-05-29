@@ -23,6 +23,7 @@ const models = {
   Message: sequelize.import("./message"),
 };
 
+// Create associations between modelss
 Object.keys(models).forEach((key) => {
   if ("associate" in models[key]) {
     models[key].associate(models);

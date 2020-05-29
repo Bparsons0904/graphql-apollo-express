@@ -1,6 +1,7 @@
 // Password hash crypto
 import bcrypt from "bcrypt";
 
+// Define user with validation requirements
 const user = (sequelize, DataTypes) => {
   const User = sequelize.define("user", {
     username: {
@@ -25,6 +26,7 @@ const user = (sequelize, DataTypes) => {
       validate: {
         notEmpty: true,
         isEmail: true,
+        msg: "Valid email is required",
       },
     },
     password: {
@@ -33,6 +35,7 @@ const user = (sequelize, DataTypes) => {
       validate: {
         notEmpty: true,
         len: [7, 42],
+        msg: "Password length of 7-42 required.",
       },
     },
     role: {
